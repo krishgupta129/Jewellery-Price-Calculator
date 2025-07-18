@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jewelry Price Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      background: #f8f8f8;
+    }
+    h1 {
+      padding: 1rem;
+      font-size: 1.5rem;
+    }
+    .logo {
+      margin-top: 1rem;
+      max-width: 120px;
+    }
+    .container {
+      padding: 1rem;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .toggle, .calc-section {
+      margin-top: 1rem;
+    }
+    .gold-theme {
+      background-color: #fff8dc;
+    }
+    .silver-theme {
+      background-color: #e6e6e6;
+    }
+    input, button, select {
+      display: block;
+      padding: 0.75rem;
+      margin: 0.5rem auto;
+      font-size: 1rem;
+      width: 90%;
+      max-width: 320px;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    button {
+      min-width: 200px;
+    }
+    .gold-theme button {
+      border: 2px solid #d4af37;
+    }
+    .silver-theme button {
+      border: 2px solid #c0c0c0;
+    }
+    .gray {
+      background-color: #ccc;
+    }
+    #result {
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin-top: 1rem;
+    }
+    @media screen and (max-width: 480px) {
+      h1 {
+        font-size: 1.25rem;
+      }
+      input, button, select {
+        width: 95%;
+        font-size: 1rem;
+      }
+      button {
+        min-width: unset;
+      }
+    }
+  </style>
+</head>
+<body>
+  <img src="logo.png" alt="SNJ Logo" class="logo">
+  <h1>Jewelry Price Calculator</h1>
+  <div class="container" id="app">
+    <div id="modeSelection">
+      <button onclick="chooseMode('gold')">Gold</button>
+      <button onclick="chooseMode('silver')">Silver</button>
+    </div>
+
+    <div id="calculationSection" style="display:none;">
+      <div class="toggle" id="goldToggle" style="display:none;">
+        <label for="goldUnit">Unit:</label>
+        <select id="goldUnit">
+          <option value="1">Gram</option>
+          <option value="0.001">Milligram</option>
+        </select>
+      </div>
+
+      <div class="calc-section">
+        <input type="number" id="weight" placeholder="Enter weight" />
+        <input type="number" id="pricePerUnit" placeholder="Price per gram" />
+        <input type="number" id="labourPerGram" placeholder="Labour per gram (Silver only)" style="display: none;" />
+
+        <button id="gstBtn" onclick="addGST()">Add 3% GST</button>
+        <button id="makingBtn" onclick="addMakingCharge()">Add 6% Making</button>
+
+        <button onclick="calculatePrice()">Calculate</button>
+        <button onclick="clearAll()">Clear</button>
+        <button onclick="goBack()">Back</button>
+
+        <div id="result"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentMode = '';
+    let gstAdded = false;
+    let makingAdded = false;
+    let basePrice = 0;
+    let finalPrice = 0;
+
+    function chooseMode(mode) {
+      currentMode = mode;
+      document.getElementById('app').className = 'container ' + (mode === 'gold' ? 'gold-theme' : 'silver-theme');
+      document.getElementById('modeSelection').style.display = 'none';
+      document.getElementById('calculationSection').style.display = 'block';
+      document.getElementById('goldToggle').style.display = mode === 'gold' ? 'block' : 'none';
+      document.getElementById('gstBtn').style.display = mode === 'gold' ? 'inline-block' : 'none';
+      document.getElementById('makingBtn').style.display = mode === 'gold' ? 'inline-block' : 'none';
+      document.getElementById('labourPerGram').style.display = mode === 'silver' ? 'block' : 'none';
+      clearAll();
+    }
+
+    function updateGrayButton(btn, active) {
+      if (active) {
+        btn.classList.add('gray');
+      } else {
+        btn.classList.remove('gray');
+      }
+    }
+
+    function calculatePrice() {
+      const weight = parseFloat(document.getElementById('weight').value);
+      const pricePerUnit = parseFloat(document.getElementById('pricePerUnit').value);
+      const labourPerGramInput = document.getElementById('labourPerGram').value;
+      const labourPerGram = labourPerGramInput ? parseFloat(labourPerGramInput) : 0;
+
+      if (isNaN(weight) || isNaN(pricePerUnit)) {
+        alert("Please enter valid weight and price.");
+        return;
+      }
+
+      let unitMultiplier = 1;
+      if (currentMode === 'gold') {
+        unitMultiplier = parseFloat(document.getElementById('goldUnit').value);
+        basePrice = (weight * unitMultiplier) * pricePerUnit;
+      } else {
+        basePrice = (weight * pricePerUnit) + (labourPerGram * weight);
+      }
+
+      finalPrice = basePrice;
+      if (gstAdded) finalPrice += basePrice * 0.03;
+      if (makingAdded) finalPrice += basePrice * 0.06;
+      updateResult();
+    }
+
+    function addGST() {
+      gstAdded = !gstAdded;
+      updateGrayButton(document.getElementById('gstBtn'), gstAdded);
+      calculatePrice();
+    }
+
+    function addMakingCharge() {
+      makingAdded = !makingAdded;
+      updateGrayButton(document.getElementById('makingBtn'), makingAdded);
+      calculatePrice();
+    }
+
+    function updateResult() {
+      document.getElementById('result').textContent = `Total Price: ₹${finalPrice.toFixed(2)}`;
+    }
+
+    function clearAll() {
+      document.getElementById('weight').value = '';
+      document.getElementById('pricePerUnit').value = '';
+      document.getElementById('labourPerGram').value = '';
+      document.getElementById('result').textContent = '';
+      gstAdded = false;
+      makingAdded = false;
+      basePrice = 0;
+      finalPrice = 0;
+      updateGrayButton(document.getElementById('gstBtn'), false);
+      updateGrayButton(document.getElementById('makingBtn'), false);
+    }
+
+    function goBack() {
+      document.getElementById('modeSelection').style.display = 'block';
+      document.getElementById('calculationSection').style.display = 'none';
+      document.getElementById('app').className = 'container';
+      currentMode = '';
+    }
+  </script>
+</body>
+</html>
